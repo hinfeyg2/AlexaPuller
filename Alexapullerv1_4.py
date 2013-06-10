@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+"""TEST"""
 import wx
 import os
 import re
@@ -144,9 +144,9 @@ class MyFrame(wx.Frame):
 		
 	def twoFindSource(self,e):
 		self.secondsourcelist = []
-		self.dirDlg = wx.DirDialog(self, "Choose Your 2nd Rushes Directory:",self.dirDirname, wx.DD_DIR_MUST_EXIST, (50,50), (50,50))
-		if self.dirDlg.ShowModal() == wx.ID_OK:
-			self.twoDirFilename = self.dirDlg.GetPath()
+		dirDlg = wx.DirDialog(self, "Choose Your 2nd Rushes Directory:",self.dirDirname, wx.DD_DIR_MUST_EXIST, (50,50), (50,50))
+		if dirDlg.ShowModal() == wx.ID_OK:
+			self.twoDirFilename = dirDlg.GetPath()
 			self.twosourceprint.SetLabel(str(self.twoDirFilename))
 		
 			for r, d, f in os.walk(self.twoDirFilename):
@@ -165,7 +165,7 @@ class MyFrame(wx.Frame):
 							SourceIndexOne = self.output.index(f_name)
 							self.listBox.Check(SourceIndexOne, True)
 						
-		self.dirDlg.Destroy()
+		dirDlg.Destroy()
 		
 	def OnOpen(self,e):
 		"""Open a File"""
@@ -244,29 +244,37 @@ class PullFiles(threading.Thread):
 		selectedList = []
 		selectedList = frame.listBox.GetCheckedStrings()
 		
-				
 		self.counter = 0
 		self.counterText = "Files Copied: "
 		self.listlength = len(selectedList)
-		print frame.SourceDictionary
-		
+		print selectedList
 		for alexa in selectedList:
 			
 			src_abs_path = frame.SourceDictionary[alexa]
 			src_relative_path = os.path.relpath(src_abs_path, frame.DirFilename)
 			dst_abs_path = os.path.join(frame.DirDest, src_relative_path)
+			
+			temp0 = src_abs_path + "\n"
+			temp1 = frame.DirFilename + "\n"
+			
+			report.write(temp1)
+			
+			
 			dst_dir = os.path.dirname(dst_abs_path)
+			
 			if not os.path.exists(dst_dir):
 				os.makedirs(dst_dir)
+			
 			ret = os.system("""cp "%s" "%s"  """ % (src_abs_path, dst_abs_path))
 			if ret != 0:
+				"""
 				putFoundOnNewLine = src_abs_path + "\n"
 				report.write(putFoundOnNewLine)
+				"""
 			else:
 				self.counter += 1
 				self.toPrint = self.counterText + str(self.counter) + "/" + str(self.listlength)
 				wx.CallAfter(frame.oncopy.SetLabel, self.toPrint)
-
 
 		report.close()
 		
