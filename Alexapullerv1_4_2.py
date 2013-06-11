@@ -70,6 +70,7 @@ class MyFrame(wx.Frame):
 		menuBar = wx.MenuBar()
 		menuBar.Append(filemenu,"&File")
 		
+		self.SourceDictionary = {}
 		
 		self.SetMenuBar(menuBar)
 		self.Bind(wx.EVT_MENU, self.OnExit, menuExit)
@@ -108,36 +109,41 @@ class MyFrame(wx.Frame):
 		DestDlg.Destroy()
 	
 	def FindSource(self,e):
-		self.SourceDictionary = {}
-		self.dirDirname = ''
-		dirDlg = wx.DirDialog(self, "Choose Your Rushes Directory:",self.dirDirname, wx.DD_DIR_MUST_EXIST, (50,50), (50,50))
+		
+		dirDirname = ''
+		
+		dirDlg = wx.DirDialog(self, "Choose Your Rushes Directory:",dirDirname, wx.DD_DIR_MUST_EXIST, (50,50), (50,50))
+		
 		if dirDlg.ShowModal() == wx.ID_OK:
-			self.DirFilename = dirDlg.GetPath()
-			self.sourceprint.SetLabel(str(self.DirFilename))
-			self.rushesDestination.Enable(True)
-			self.firstPass = list(self.output)
-			for r, d, f in os.walk(self.DirFilename):
+			DirFilename = dirDlg.GetPath()
+			
+			for r, d, f in os.walk(DirFilename):
 				for file in f:
 					f_name, f_ext = os.path.splitext(file)
 					if ".mov" == f_ext:
 					
-					
 						if f_name in self.output:
 						
-							src_abs_path = os.path.join(r, file)
-							self.SourceDictionary[f_name] = [src_abs_path, self.DirFilename]
-							
 							SourceIndexOne = self.output.index(f_name)
-							self.listBox.Check(SourceIndexOne, True)
-						
-							if f_name in self.firstPass:
-								self.firstPass.remove(f_name)
-							else:
-								pass
+							
+							src_abs_path = os.path.join(r, file)
+							self.SourceDictionary[f_name] = [src_abs_path, DirFilename]
+							self.listBox.Check(SourceIndexOne, True)		
 			
-			self.firstsourcelist = self.listBox.GetCheckedStrings()				
-			self.tworushesSource.Enable(True)
-			self.twoDirFilename = ''
+			
+			
+			
+			
+			if self.sourceprint.GetLabel() == "Awaiting Source Directory":
+				self.sourceprint.SetLabel(str(DirFilename))
+			else:
+				self.twosourceprint.SetLabel(str(DirFilename))
+				
+				
+			self.rushesDestination.Enable(True)
+			
+			
+			
 			
 			
 		dirDlg.Destroy()	
@@ -176,6 +182,7 @@ class MyFrame(wx.Frame):
 			self.selectAllButton.Enable(True)
 			self.selectNoneButton.Enable(True)
 			self.rushesSource.Enable(True)
+			self.tworushesSource.Enable(True)
 			
 			r.close()
 		dlg.Destroy()
@@ -215,8 +222,9 @@ class PullFiles(threading.Thread):
 		threading.Thread.__init__(self)
 		
 	def run(self):
+		report = open("report.txt", "w")
+		self.toPrint = ""
 		
-		report = open("port.txt", "w")
 		selectedList = []
 		selectedList = frame.listBox.GetCheckedStrings()
 		
@@ -226,35 +234,36 @@ class PullFiles(threading.Thread):
 		
 		for alexa in selectedList:
 			
-			src_abs_path = frame.SourceDictionary[alexa][0]
-			DirFilename = frame.SourceDictionary[alexa][1]
-			
-			src_relative_path = os.path.relpath(src_abs_path, DirFilename)
-			dst_abs_path = os.path.join(frame.DirDest, src_relative_path)
-			
-			dst_dir = os.path.dirname(dst_abs_path)
-			
-			if not os.path.exists(dst_dir):
-				os.makedirs(dst_dir)
-			
-			ret = os.system("""cp "%s" "%s"  """ % (src_abs_path, dst_abs_path))
-			if ret != 0:
+			if frame.SourceDictionary.get(alexa):
 				
-				putFoundOnNewLine = src_abs_path + "\n"
-				report.write(putFoundOnNewLine)
+				src_abs_path = frame.SourceDictionary[alexa][0]
+				DirFilename = frame.SourceDictionary[alexa][1]
+				src_relative_path = os.path.relpath(src_abs_path, DirFilename)
+				dst_abs_path = os.path.join(frame.DirDest, src_relative_path)
+			
+				dst_dir = os.path.dirname(dst_abs_path)
+			
+				if not os.path.exists(dst_dir):
+					os.makedirs(dst_dir)
+			
+				ret = os.system(""" copy "%s" "%s"  """ % (src_abs_path, dst_abs_path))
+				if ret != 0:
+					pass
 				
+				else:
+					self.counter += 1
+					self.toPrint = self.counterText + str(self.counter) + "/" + str(self.listlength)
+					wx.CallAfter(frame.oncopy.SetLabel, self.toPrint)
 			else:
-				self.counter += 1
-				self.toPrint = self.counterText + str(self.counter) + "/" + str(self.listlength)
-				wx.CallAfter(frame.oncopy.SetLabel, self.toPrint)
-		
+				pass
+				
 		self.finishedPrint = "Copy Complete. " + self.toPrint
 		wx.CallAfter(frame.oncopy.SetLabel, self.finishedPrint)
+		
+
 		report.close()
-		
-		
 		
 	
 app = wx.App(True)
-frame = MyFrame(None,"Alexa Puller v1.4")
+frame = MyFrame(None,"Alexa Puller v1.4.2")
 app.MainLoop()
