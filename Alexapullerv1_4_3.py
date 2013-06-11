@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 
+from __future__ import division
 import wx
 import os
 import re
 import glob
 import threading
-import shutil
+
 
 class MyFrame(wx.Frame):
 	def __init__(self, parent, title):
-		wx.Frame.__init__(self,parent, title=title, size=(750,300), style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
+		wx.Frame.__init__(self,parent, title=title, size=(750,310), style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
 		self.panel = wx.Panel(self,-1)
 		
 		self.sourceprint = wx.StaticText(self.panel, -1, "Awaiting Source Directory", (400,65))
@@ -21,6 +22,10 @@ class MyFrame(wx.Frame):
 		self.openprint = wx.StaticText(self.panel, -1, "Awaiting EDL/TXT/XML File",(400,20))
 		
 		self.oncopy = wx.StaticText(self.panel, -1, "",(400,215))
+		
+		self.getsize = wx.StaticText(self.panel, -1, "",(400,235))
+		
+		
 		
 		openButton = wx.Button(self.panel, -1, 'Open', (250,15),(130,-1))
 		self.Bind(wx.EVT_BUTTON, self.OnOpen, openButton)
@@ -104,8 +109,6 @@ class MyFrame(wx.Frame):
 						
 			self.DoTheCopyButton.Enable(True)
 			
-			
-			
 		DestDlg.Destroy()
 	
 	def FindSource(self,e):
@@ -130,24 +133,14 @@ class MyFrame(wx.Frame):
 							self.SourceDictionary[f_name] = [src_abs_path, DirFilename]
 							self.listBox.Check(SourceIndexOne, True)		
 			
-			
-			
-			
-			
 			if self.sourceprint.GetLabel() == "Awaiting Source Directory":
 				self.sourceprint.SetLabel(str(DirFilename))
 			else:
 				self.twosourceprint.SetLabel(str(DirFilename))
 				
-				
 			self.rushesDestination.Enable(True)
 			
-			
-			
-			
-			
 		dirDlg.Destroy()	
-		
 		
 	def OnOpen(self,e):
 		"""Open a File"""
@@ -196,21 +189,11 @@ class MyFrame(wx.Frame):
 	def PrintChecked(self,e):
 		self.PrintChecked = self.listBox.GetCheckedStrings()
 		print self.PrintChecked
-		
+	
 	def DoCopy(self,e):
 		
 		self.worker = PullFiles()
 		self.worker.start()
-		
-		
-		"""
-	def makefilesfunction(self,e):
-		for i in self.output:
-			temp_path = "/Users/gavinhinfey/Desktop/" + i + ".mov"
-			file = open(temp_path, "w")
-			file.write("")
-			file.close	
-		"""
 		
 	def OnExit(self,e):
 		self.Close(True)
@@ -222,6 +205,13 @@ class PullFiles(threading.Thread):
 		threading.Thread.__init__(self)
 		
 	def run(self):
+		
+		self.finishedPrint = "Copy Started."
+		wx.CallAfter(frame.oncopy.SetLabel, self.finishedPrint)
+		
+		self.calc = CalSizeTime()
+		self.calc.start()
+		
 		report = open("report.txt", "w")
 		self.toPrint = ""
 		
@@ -235,7 +225,6 @@ class PullFiles(threading.Thread):
 		for alexa in selectedList:
 			
 			if frame.SourceDictionary.get(alexa):
-				
 				
 				src_abs_path = frame.SourceDictionary[alexa][0]
 				DirFilename = frame.SourceDictionary[alexa][1]
@@ -263,7 +252,31 @@ class PullFiles(threading.Thread):
 		
 
 		report.close()
+	
+class CalSizeTime(threading.Thread):
+	
+	def __init__(self):
+		threading.Thread.__init__(self)
 		
+	def run(self):
+		
+		selectedList = frame.listBox.GetCheckedStrings()
+		TotalSize = 0
+		self.feedback = "Calculating Size..."
+		wx.CallAfter(frame.getsize.SetLabel, self.feedback)
+		
+		for alexa in selectedList:
+			if frame.SourceDictionary.get(alexa):
+			
+				src_abs_path = frame.SourceDictionary[alexa][0]
+				
+				statinfo = os.stat(src_abs_path)
+				TotalSize += statinfo.st_size
+		
+		CalString = int(TotalSize) / 1073741824
+		CalStringWithTxt = str(CalString) + " Gigs In Total."
+		self.feedback = CalStringWithTxt
+		wx.CallAfter(frame.getsize.SetLabel, self.feedback)
 	
 app = wx.App(True)
 frame = MyFrame(None,"Alexa Puller v1.4.2")
