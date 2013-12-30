@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from __future__ import division
+import subprocess
 import wx
 import os
 import re
@@ -24,8 +25,6 @@ class MyFrame(wx.Frame):
 		self.oncopy = wx.StaticText(self.panel, -1, "",(400,215))
 		
 		self.getsize = wx.StaticText(self.panel, -1, "",(400,235))
-		
-		
 		
 		openButton = wx.Button(self.panel, -1, 'Open', (250,15),(130,-1))
 		self.Bind(wx.EVT_BUTTON, self.OnOpen, openButton)
@@ -128,10 +127,10 @@ class MyFrame(wx.Frame):
 						if f_name in self.output:
 						
 							SourceIndexOne = self.output.index(f_name)
-							
+
 							src_abs_path = os.path.join(r, file)
 							self.SourceDictionary[f_name] = [src_abs_path, DirFilename]
-							self.listBox.Check(SourceIndexOne, True)		
+							self.listBox.Check(SourceIndexOne, True)
 			
 			if self.sourceprint.GetLabel() == "Awaiting Source Directory":
 				self.sourceprint.SetLabel(str(DirFilename))
@@ -234,9 +233,14 @@ class PullFiles(threading.Thread):
 				dst_dir = os.path.dirname(dst_abs_path)
 			
 				if not os.path.exists(dst_dir):
-					os.makedirs(dst_dir)
-			
-				ret = os.system(""" cp "%s" "%s"  """ % (src_abs_path, dst_abs_path))
+					os.makedirs(dst_dir)	
+				ret = os.system(""" rsync -avP "%s" "%s" """ % (src_abs_path, dst_abs_path))
+
+
+				pipe = subprocess.check_output(args, shell=True)
+				print pipe
+				
+				
 				if ret != 0:
 					pass
 				

@@ -26,7 +26,8 @@ class ResultEvent(wx.PyEvent):
 		wx.PyEvent.__init__(self)
 		self.SetEventType(EVT_RESULT_ID)
 		self.data = data
-		
+
+
 class WorkerThread(Thread):
 	"""Worker Thread Class."""
 	def __init__(self, notify_window):
@@ -125,7 +126,6 @@ class WorkerThread(Thread):
 		self._want_abort = 1
 		
 		
-
 class MyFrame(wx.Frame):
 	def __init__(self, parent, title):
 		wx.Frame.__init__(self,parent, title=title, size=(750,300), style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
