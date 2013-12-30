@@ -236,7 +236,6 @@ class PullFiles(threading.Thread):
 					os.makedirs(dst_dir)	
 				ret = os.system(""" rsync -avP "%s" "%s" """ % (src_abs_path, dst_abs_path))
 
-
 				pipe = subprocess.check_output(args, shell=True)
 				print pipe
 				
