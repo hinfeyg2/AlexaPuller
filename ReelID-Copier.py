@@ -233,7 +233,6 @@ class PullFiles(threading.Thread):
 		self.calc = CalSizeTime()
 		self.calc.start()
 		
-		report = open("report.txt", "w")
 		self.toPrint = ""
 		
 		selectedList = []
@@ -285,8 +284,6 @@ class PullFiles(threading.Thread):
 		self.finishedPrint = "Copy Complete. " + self.toPrint
 		wx.CallAfter(frame.oncopy.SetLabel, self.finishedPrint)
 		
-
-		report.close()
 
 
 class CalSpeed(threading.Thread):
