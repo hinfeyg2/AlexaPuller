@@ -1,17 +1,20 @@
 #!/usr/bin/env python
-
 from __future__ import division
-import subprocess
 import wx
 import os
 import re
 import glob
 import threading
+import subprocess
+import time
+import shutil
+import shlex
 
 
 class MyFrame(wx.Frame):
+	
 	def __init__(self, parent, title):
-		wx.Frame.__init__(self,parent, title=title, size=(750,310), style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
+		wx.Frame.__init__(self,parent, title=title, size=(750,310), style = wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
 		self.panel = wx.Panel(self,-1)
 		
 		self.sourceprint = wx.StaticText(self.panel, -1, "Awaiting Source Directory", (400,65))
@@ -20,11 +23,13 @@ class MyFrame(wx.Frame):
 		
 		self.destinationprint = wx.StaticText(self.panel, -1, "Awaiting Destination Directory",(400,165))
 		
-		self.openprint = wx.StaticText(self.panel, -1, "Awaiting EDL/TXT/XML File",(400,20))
+		self.openprint = wx.StaticText(self.panel, -1, "Awaiting EDL",(400,20))
 		
 		self.oncopy = wx.StaticText(self.panel, -1, "",(400,215))
 		
 		self.getsize = wx.StaticText(self.panel, -1, "",(400,235))
+
+		self.getspeed = wx.StaticText(self.panel, -1, "",(400,255))
 		
 		openButton = wx.Button(self.panel, -1, 'Open', (250,15),(130,-1))
 		self.Bind(wx.EVT_BUTTON, self.OnOpen, openButton)
@@ -41,14 +46,12 @@ class MyFrame(wx.Frame):
 		self.Bind(wx.EVT_BUTTON, self.SetDest, self.rushesDestination)
 		self.rushesDestination.Enable(False)
 		
-		"""
-		PrintCheckedButton = wx.Button(self.panel, -1, 'Print Checked', (250,150))
-		self.Bind(wx.EVT_BUTTON, self.PrintChecked, PrintCheckedButton)
-		"""
-		
 		self.DoTheCopyButton = wx.Button(self.panel, -1, 'Pull Files', (250,210),(130,-1))
 		self.Bind(wx.EVT_BUTTON, self.DoCopy, self.DoTheCopyButton)
 		self.DoTheCopyButton.Enable(False)
+		
+		self.fileformats = wx.TextCtrl(self.panel, -1, pos=(25,250), size=(200,-1))
+		self.fileformats.SetValue('.mov .R3D .MXF')
 		
 		self.selectAllButton = wx.Button(self.panel, -1, "All", (15,210), (50,-1))
 		self.Bind(wx.EVT_BUTTON, self.SelectAll, self.selectAllButton)
@@ -58,14 +61,10 @@ class MyFrame(wx.Frame):
 		self.Bind(wx.EVT_BUTTON, self.SelectNone, self.selectNoneButton)
 		self.selectNoneButton.Enable(False)
 		
-		self.listBox = wx.CheckListBox(self.panel, -1, (20, 6), (220, 195), "", wx.LB_SINGLE)
+		self.listBox = wx.CheckListBox(self.panel, -1, (20, 20), (220, 181), "", wx.LB_SINGLE)
 		self.inlistDisplay = wx.StaticText(self.panel, -1, "",(160,215))
 		self.listBox.Bind(wx.EVT_PAINT, self.on_list_update)
 		
-		"""
-		self.makefiles = wx.Button(self.panel, -1, "Make Files", (270,210))
-		self.Bind(wx.EVT_BUTTON, self.makefilesfunction, self.makefiles)
-		"""
 		filemenu = wx.Menu()
 		
 		menuAbout = filemenu.Append(wx.ID_ABOUT, "&About", "Information about this program")
@@ -90,6 +89,10 @@ class MyFrame(wx.Frame):
 		self.Refresh()
 
 	def SetDest(self,e):
+		
+		inputformats = frame.fileformats.GetValue()
+		inputformatslist = shlex.split(inputformats)
+		
 		self.Destname = ''
 		checkedinlist = self.listBox.GetCheckedStrings()
 		DestDlg = wx.DirDialog(self, "Choose Your Destination Directory:",self.Destname, wx.DD_DIR_MUST_EXIST, (50,50), (50,50))
@@ -99,18 +102,25 @@ class MyFrame(wx.Frame):
 			for r, d, f in os.walk(self.DirDest):
 				for file in f:
 					f_name, f_ext = os.path.splitext(file)
-					if ".mov" == f_ext:
-						if f_name in checkedinlist:
-							checkedindex = self.output.index(f_name)
+					
+					for i in inputformatslist:
+					
+						if str(i) == f_ext:
+					
+							if f_name in checkedinlist:
+								checkedindex = self.output.index(f_name)
 							
-							self.listBox.Check(checkedindex, False)
+								self.listBox.Check(checkedindex, False)
 							
-						
 			self.DoTheCopyButton.Enable(True)
 			
 		DestDlg.Destroy()
 	
 	def FindSource(self,e):
+		
+		
+		inputformats = frame.fileformats.GetValue()
+		inputformatslist = shlex.split(inputformats)
 		
 		dirDirname = ''
 		
@@ -120,17 +130,23 @@ class MyFrame(wx.Frame):
 			DirFilename = dirDlg.GetPath()
 			
 			for r, d, f in os.walk(DirFilename):
+				
 				for file in f:
 					f_name, f_ext = os.path.splitext(file)
-					if ".mov" == f_ext:
+					f_name = f_name.upper()
 					
-						if f_name in self.output:
+					for i in inputformatslist:
+					
+						if str(i) == f_ext:
+					
+							if f_name in self.output:
 						
-							SourceIndexOne = self.output.index(f_name)
-
-							src_abs_path = os.path.join(r, file)
-							self.SourceDictionary[f_name] = [src_abs_path, DirFilename]
-							self.listBox.Check(SourceIndexOne, True)
+								SourceIndexOne = self.output.index(f_name)
+							
+								src_abs_path = os.path.join(r, file)
+								self.SourceDictionary[f_name] = [src_abs_path, DirFilename]
+								self.listBox.Check(SourceIndexOne, True)	
+						
 			
 			if self.sourceprint.GetLabel() == "Awaiting Source Directory":
 				self.sourceprint.SetLabel(str(DirFilename))
@@ -138,10 +154,11 @@ class MyFrame(wx.Frame):
 				self.twosourceprint.SetLabel(str(DirFilename))
 				
 			self.rushesDestination.Enable(True)
-			
+		
 		dirDlg.Destroy()	
 		
 	def OnOpen(self,e):
+		
 		"""Open a File"""
 		self.dirname = ''
 		dlg = wx.FileDialog(self, "Choose a File:",self.dirname, "", "*.*", wx.OPEN)
@@ -150,13 +167,17 @@ class MyFrame(wx.Frame):
 			self.dirname = dlg.GetDirectory()
 			r = open(os.path.join(self.dirname, self.filename), 'r+')
 			self.edlfile = os.path.join(self.dirname, self.filename)
-			self.openprint.SetLabel(str(self.edlfile)) 
+			self.openprint.SetLabel(str(self.filename)) 
 			line = r.readline()
 			foundList = list()
+			
 			for line in r:
-				matchObj = re.search( r'\w\d\d\d\w\d\d\d_([^\s]+)', line, re.M|re.I)
-				if matchObj:
-					foundAlexaRoll = matchObj.group()
+			
+				splitline = shlex.split(line)
+				firstinline = splitline[0]
+				matchitem = re.search('\d\d\d\d\d\d', firstinline)
+				if matchitem:
+					foundAlexaRoll = splitline[1]
 					foundList.append(foundAlexaRoll)
 				else:
 					pass
@@ -175,6 +196,7 @@ class MyFrame(wx.Frame):
 			self.selectNoneButton.Enable(True)
 			self.rushesSource.Enable(True)
 			self.tworushesSource.Enable(True)
+			frame.fileformats.Enable(False)
 			
 			r.close()
 		dlg.Destroy()
@@ -233,20 +255,30 @@ class PullFiles(threading.Thread):
 				dst_dir = os.path.dirname(dst_abs_path)
 			
 				if not os.path.exists(dst_dir):
-					os.makedirs(dst_dir)	
-				ret = os.system(""" rsync -avP "%s" "%s" """ % (src_abs_path, dst_abs_path))
+					os.makedirs(dst_dir)
 
-				pipe = subprocess.check_output(args, shell=True)
-				print pipe
+				self.dst_abs_path = dst_abs_path
+
+				self.dogs = True
 				
-				
+				self.speed = CalSpeed()
+				self.speed.start()
+
+				self.dogs = True
+
+				ret = shutil.copy(src_abs_path, dst_abs_path)
+				"""
+				self.dogs = False
+
 				if ret != 0:
 					pass
 				
 				else:
-					self.counter += 1
-					self.toPrint = self.counterText + str(self.counter) + "/" + str(self.listlength)
-					wx.CallAfter(frame.oncopy.SetLabel, self.toPrint)
+				"""
+				self.counter += 1
+				self.toPrint = self.counterText + str(self.counter) + "/" + str(self.listlength)
+				wx.CallAfter(frame.oncopy.SetLabel, self.toPrint)
+				
 			else:
 				pass
 				
@@ -255,7 +287,37 @@ class PullFiles(threading.Thread):
 		
 
 		report.close()
-	
+
+
+class CalSpeed(threading.Thread):
+
+        def __init__(self):
+                threading.Thread.__init__(self)
+
+                
+        def run(self):
+
+                time.sleep(2)
+
+                self.x = 0
+                def work():  
+
+                        if frame.worker.dogs:
+                                y = self.x
+                                
+                                threading.Timer(1,work).start();
+                                self.x = os.path.getsize(frame.worker.dst_abs_path)
+
+                                growth = self.x - y
+                                
+                                kbs = growth / 1048576
+                                places = int(kbs * 10**1) / 10**1
+                                wx.CallAfter(frame.getspeed.SetLabel, str(places) + " MBps")
+                        else:
+                                pass
+                        
+                work()
+
 class CalSizeTime(threading.Thread):
 	
 	def __init__(self):
@@ -277,10 +339,11 @@ class CalSizeTime(threading.Thread):
 				TotalSize += statinfo.st_size
 		
 		CalString = int(TotalSize) / 1073741824
-		CalStringWithTxt = str(CalString) + " Gigs In Total."
+		places = int(CalString * 10**3) / 10**3
+		CalStringWithTxt = str(places) + " Gigs In Total."
 		self.feedback = CalStringWithTxt
 		wx.CallAfter(frame.getsize.SetLabel, self.feedback)
 	
 app = wx.App(True)
-frame = MyFrame(None,"Alexa Puller v1.4.2")
+frame = MyFrame(None,"Alexa Puller v1.5")
 app.MainLoop()
