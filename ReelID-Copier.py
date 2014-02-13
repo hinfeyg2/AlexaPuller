@@ -14,7 +14,7 @@ import shlex
 class MyFrame(wx.Frame):
 	
 	def __init__(self, parent, title):
-		wx.Frame.__init__(self,parent, title=title, size=(750,310), style = wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
+		wx.Frame.__init__(self,parent, title=title, size=(750,330), style = wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
 		self.panel = wx.Panel(self,-1)
 		
 		self.sourceprint = wx.StaticText(self.panel, -1, "Awaiting Source Directory", (400,65))
@@ -61,7 +61,7 @@ class MyFrame(wx.Frame):
 		self.Bind(wx.EVT_BUTTON, self.SelectNone, self.selectNoneButton)
 		self.selectNoneButton.Enable(False)
 		
-		self.listBox = wx.CheckListBox(self.panel, -1, (20, 20), (220, 181), "", wx.LB_SINGLE)
+		self.listBox = wx.CheckListBox(self.panel, -1, (15, 15), (220, 181), "", wx.LB_SINGLE)
 		self.inlistDisplay = wx.StaticText(self.panel, -1, "",(160,215))
 		self.listBox.Bind(wx.EVT_PAINT, self.on_list_update)
 		
@@ -120,7 +120,7 @@ class MyFrame(wx.Frame):
 		
 		
 		inputformats = frame.fileformats.GetValue()
-		inputformatslist = shlex.split(inputformats)
+		inputformatslist = inputformats.split(" ")
 		
 		dirDirname = ''
 		
@@ -136,7 +136,7 @@ class MyFrame(wx.Frame):
 					f_name = f_name.upper()
 					
 					for i in inputformatslist:
-					
+						
 						if str(i) == f_ext:
 					
 							if f_name in self.output:
@@ -288,32 +288,32 @@ class PullFiles(threading.Thread):
 
 class CalSpeed(threading.Thread):
 
-        def __init__(self):
-                threading.Thread.__init__(self)
+	def __init__(self):
+		threading.Thread.__init__(self)
 
-                
-        def run(self):
+		
+	def run(self):
 
-                time.sleep(2)
+		time.sleep(2)
 
-                self.x = 0
-                def work():  
+		self.x = 0
+		def work():  
 
-                        if frame.worker.dogs:
-                                y = self.x
-                                
-                                threading.Timer(1,work).start();
-                                self.x = os.path.getsize(frame.worker.dst_abs_path)
+			if frame.worker.dogs:
+				y = self.x
+				
+				threading.Timer(1,work).start();
+				self.x = os.path.getsize(frame.worker.dst_abs_path)
 
-                                growth = self.x - y
-                                
-                                kbs = growth / 1048576
-                                places = int(kbs * 10**1) / 10**1
-                                wx.CallAfter(frame.getspeed.SetLabel, str(places) + " MBps")
-                        else:
-                                pass
-                        
-                work()
+				growth = self.x - y
+				
+				kbs = growth / 1048576
+				places = int(kbs * 10**1) / 10**1
+				wx.CallAfter(frame.getspeed.SetLabel, str(places) + " MBps")
+			else:
+				pass
+			
+		work()
 
 class CalSizeTime(threading.Thread):
 	
@@ -340,7 +340,9 @@ class CalSizeTime(threading.Thread):
 		CalStringWithTxt = str(places) + " Gigs In Total."
 		self.feedback = CalStringWithTxt
 		wx.CallAfter(frame.getsize.SetLabel, self.feedback)
-	
+		self.Close(True)
+		
+		
 app = wx.App(True)
-frame = MyFrame(None,"Alexa Puller v1.5")
+frame = MyFrame(None,"ReelID-Copier")
 app.MainLoop()
