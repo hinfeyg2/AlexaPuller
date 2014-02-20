@@ -9,12 +9,14 @@ import subprocess
 import time
 import shutil
 import shlex
+from wx.lib.wordwrap import wordwrap
+import wx.html
 
 
 class MyFrame(wx.Frame):
 	
 	def __init__(self, parent, title):
-		wx.Frame.__init__(self,parent, title=title, size=(750,310), style = wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
+		wx.Frame.__init__(self,parent, title=title, size=(750,330), style = wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
 		self.panel = wx.Panel(self,-1)
 		
 		self.sourceprint = wx.StaticText(self.panel, -1, "Awaiting Source Directory", (400,65))
@@ -61,7 +63,7 @@ class MyFrame(wx.Frame):
 		self.Bind(wx.EVT_BUTTON, self.SelectNone, self.selectNoneButton)
 		self.selectNoneButton.Enable(False)
 		
-		self.listBox = wx.CheckListBox(self.panel, -1, (20, 20), (220, 181), "", wx.LB_SINGLE)
+		self.listBox = wx.CheckListBox(self.panel, -1, (15, 15), (220, 181), "", wx.LB_SINGLE)
 		self.inlistDisplay = wx.StaticText(self.panel, -1, "",(160,215))
 		self.listBox.Bind(wx.EVT_PAINT, self.on_list_update)
 		
@@ -77,8 +79,24 @@ class MyFrame(wx.Frame):
 		
 		self.SetMenuBar(menuBar)
 		self.Bind(wx.EVT_MENU, self.OnExit, menuExit)
+		self.Bind(wx.EVT_MENU, self.onAboutDlg, menuAbout)
+		
 		self.Centre()
 		self.Show(True)
+		
+	def onAboutDlg(self, event):
+		info = wx.AboutDialogInfo()
+		info.Name = "File Fetcher"
+		info.Version = "0.0.1 Beta"
+		info.Copyright = "(C) 2008 Gavin Hinfey"
+		info.Description = wordwrap(
+		"For use in the Film/Television Post Production industry." ,
+		350, wx.ClientDC(self.panel))
+		info.WebSite = ("https://github.com/hinfeyg2/File-Fetcher", "GitHub Page")
+		info.Developers = ["Gavin Hinfey"]
+		info.License = wordwrap("Currently completely and totally open source!", 500,
+				    wx.ClientDC(self.panel))
+		wx.AboutBox(info)
 		
 	def on_list_update(self, event):
 		event.Skip()
@@ -283,37 +301,36 @@ class PullFiles(threading.Thread):
 				
 		self.finishedPrint = "Copy Complete. " + self.toPrint
 		wx.CallAfter(frame.oncopy.SetLabel, self.finishedPrint)
-		
-
+	
 
 class CalSpeed(threading.Thread):
 
-        def __init__(self):
-                threading.Thread.__init__(self)
+	def __init__(self):
+		threading.Thread.__init__(self)
 
-                
-        def run(self):
+		
+	def run(self):
 
-                time.sleep(2)
+		time.sleep(2)
 
-                self.x = 0
-                def work():  
+		self.x = 0
+		def work():  
 
-                        if frame.worker.dogs:
-                                y = self.x
-                                
-                                threading.Timer(1,work).start();
-                                self.x = os.path.getsize(frame.worker.dst_abs_path)
+			if frame.worker.dogs:
+				y = self.x
+				
+				threading.Timer(1,work).start();
+				self.x = os.path.getsize(frame.worker.dst_abs_path)
 
-                                growth = self.x - y
-                                
-                                kbs = growth / 1048576
-                                places = int(kbs * 10**1) / 10**1
-                                wx.CallAfter(frame.getspeed.SetLabel, str(places) + " MBps")
-                        else:
-                                pass
-                        
-                work()
+				growth = self.x - y
+				
+				kbs = growth / 1048576
+				places = int(kbs * 10**1) / 10**1
+				wx.CallAfter(frame.getspeed.SetLabel, str(places) + " MBps")
+			else:
+				pass
+			
+		work()
 
 class CalSizeTime(threading.Thread):
 	
@@ -342,5 +359,5 @@ class CalSizeTime(threading.Thread):
 		wx.CallAfter(frame.getsize.SetLabel, self.feedback)
 	
 app = wx.App(True)
-frame = MyFrame(None,"Alexa Puller v1.5")
+frame = MyFrame(None,"File Fetcher 0.0.1 Beta")
 app.MainLoop()
