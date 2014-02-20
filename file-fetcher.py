@@ -99,7 +99,6 @@ class MyFrame(wx.Frame):
 		wx.AboutBox(info)
 		
 	def on_list_update(self, event):
-		#comment
 		event.Skip()
 		self.filecount = self.listBox.GetCount()
 		self.findchecked = self.listBox.GetChecked()
