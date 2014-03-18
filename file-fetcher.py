@@ -16,7 +16,7 @@ import wx.html
 class MyFrame(wx.Frame):
 	
 	def __init__(self, parent, title):
-		wx.Frame.__init__(self,parent, title=title, size=(750,310), style = wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
+		wx.Frame.__init__(self,parent, title=title, size=(750,335), style = wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
 		self.panel = wx.Panel(self,-1)
 		
 		self.sourceprint = wx.StaticText(self.panel, -1, "Awaiting Source Directory", (400,65))
@@ -54,6 +54,9 @@ class MyFrame(wx.Frame):
 		
 		self.fileformats = wx.TextCtrl(self.panel, -1, pos=(25,250), size=(200,-1))
 		self.fileformats.SetValue('.mov .R3D .MXF')
+		
+		self.inputquery = wx.TextCtrl(self.panel, -1, pos=(25,280), size=(200,-1))
+		self.inputquery.SetValue('')
 		
 		self.selectAllButton = wx.Button(self.panel, -1, "All", (15,210), (50,-1))
 		self.Bind(wx.EVT_BUTTON, self.SelectAll, self.selectAllButton)
@@ -118,6 +121,8 @@ class MyFrame(wx.Frame):
 			self.DirDest = DestDlg.GetPath()
 			self.destinationprint.SetLabel(str(self.DirDest))
 			for r, d, f in os.walk(self.DirDest):
+				enddir = str(r).split("/")
+				enddir = enddir[-1]
 				for file in f:
 					f_name, f_ext = os.path.splitext(file)
 					
@@ -129,6 +134,14 @@ class MyFrame(wx.Frame):
 								checkedindex = self.output.index(f_name)
 							
 								self.listBox.Check(checkedindex, False)
+							
+						elif str(i) == "folder":
+							
+							if enddir in checkedinlist:
+								checkedindex = self.output.index(enddir)
+								
+								self.listBox.Check(checkedindex, False)
+							
 							
 			self.DoTheCopyButton.Enable(True)
 			
@@ -148,10 +161,13 @@ class MyFrame(wx.Frame):
 			DirFilename = dirDlg.GetPath()
 			
 			for r, d, f in os.walk(DirFilename):
+				enddir = str(r).split("/")
+				enddir = enddir[-1]
 				
 				for file in f:
 					f_name, f_ext = os.path.splitext(file)
 					f_name = f_name.upper()
+					
 					
 					for i in inputformatslist:
 					
@@ -163,8 +179,19 @@ class MyFrame(wx.Frame):
 							
 								src_abs_path = os.path.join(r, file)
 								self.SourceDictionary[f_name] = [src_abs_path, DirFilename]
-								self.listBox.Check(SourceIndexOne, True)	
-						
+								self.listBox.Check(SourceIndexOne, True)
+								
+						elif str(i) == "folder":
+							
+							if enddir in self.output:
+								
+								SourceIndexOne = self.output.index(enddir)
+								
+								src_abs_path = r
+								self.SourceDictionary[enddir] = [src_abs_path, DirFilename]
+								self.listBox.Check(SourceIndexOne, True)
+								
+					
 			
 			if self.sourceprint.GetLabel() == "Awaiting Source Directory":
 				self.sourceprint.SetLabel(str(DirFilename))
@@ -189,16 +216,60 @@ class MyFrame(wx.Frame):
 			line = r.readline()
 			foundList = list()
 			
-			for line in r:
 			
-				splitline = shlex.split(line)
-				firstinline = splitline[0]
-				matchitem = re.search('\d\d\d\d\d\d', firstinline)
-				if matchitem:
-					foundAlexaRoll = splitline[1]
-					foundList.append(foundAlexaRoll)
-				else:
-					pass
+			
+			if len(frame.inputquery.GetValue()) == False:
+			
+			
+				for line in r:
+				
+					splitline = shlex.split(line)
+				
+					try: 
+						
+						firstinline = splitline[0]
+						matchitem = re.search('\d\d\d', firstinline).group(0)
+						
+						
+					except:
+						pass
+					
+					else:
+						
+						foundAlexaRoll = splitline[1]
+						foundList.append(foundAlexaRoll)
+					
+			else:
+			
+			
+				for line in r:
+				
+					splitline = shlex.split(line)
+				
+					try: 
+						firstinline = splitline[0]
+				
+					except:
+						pass
+				
+					else:
+						try:
+							#"Name:\s+([A-Za-z]*)"
+							#'(FINAL CUT PRO REEL:)'
+							inputquery = frame.inputquery.GetValue()
+							dogs = str(inputquery) + ".\w+"
+							cats = str(inputquery)
+							matchitem = re.search(dogs, line).group(0)
+						
+						except:
+							pass
+					
+						else:
+							resplit = re.split(cats, matchitem)
+							foundAlexaRoll = resplit[1]
+							foundList.append(foundAlexaRoll)
+						
+
 			self.output = []
 			def removeDupe(foundList):
 				for x in foundList:
@@ -257,7 +328,12 @@ class PullFiles(threading.Thread):
 		selectedList = frame.listBox.GetCheckedStrings()
 		
 		self.counter = 0
-		self.counterText = "Files Copied: "
+		
+		if str(frame.fileformats.GetValue()) == "folder":
+			self.counterText = "Folders Copied: "
+		else:
+			self.counterText = "Files Copied: "
+			
 		self.listlength = len(selectedList)
 		
 		for alexa in selectedList:
@@ -277,13 +353,22 @@ class PullFiles(threading.Thread):
 				self.dst_abs_path = dst_abs_path
 
 				self.dogs = True
-				
+			
 				self.speed = CalSpeed()
 				self.speed.start()
 
 				self.dogs = True
-
-				ret = shutil.copy(src_abs_path, dst_abs_path)
+				
+				
+				
+				if str(frame.fileformats.GetValue()) == "folder":
+					
+					ret = shutil.copytree(src_abs_path, dst_abs_path)
+					
+				else:
+					
+					ret = shutil.copy(src_abs_path, dst_abs_path)
+					
 				"""
 				self.dogs = False
 
@@ -319,8 +404,13 @@ class CalSpeed(threading.Thread):
 			if frame.worker.dogs:
 				y = self.x
 				
+				if str(frame.fileformats.GetValue()) == "folder":
+					temppath = frame.worker.dst_abs_path + "/"
+				else:
+					temppath = frame.worker.dst_abs_path
+				
 				threading.Timer(1,work).start();
-				self.x = os.path.getsize(frame.worker.dst_abs_path)
+				self.x = os.path.getsize(temppath)
 
 				growth = self.x - y
 				
@@ -349,8 +439,16 @@ class CalSizeTime(threading.Thread):
 			
 				src_abs_path = frame.SourceDictionary[alexa][0]
 				
-				statinfo = os.stat(src_abs_path)
+				if str(frame.fileformats.GetValue()) == "folder":
+					temppath = src_abs_path + "/"
+				else:
+					temppath = src_abs_path
+				
+				
+				statinfo = os.stat(temppath)
+				
 				TotalSize += statinfo.st_size
+			
 		
 		CalString = int(TotalSize) / 1073741824
 		places = int(CalString * 10**3) / 10**3
