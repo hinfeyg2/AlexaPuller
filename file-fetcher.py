@@ -16,7 +16,7 @@ import wx.html
 class MyFrame(wx.Frame):
 	
 	def __init__(self, parent, title):
-		wx.Frame.__init__(self,parent, title=title, size=(750,330), style = wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
+		wx.Frame.__init__(self,parent, title=title, size=(750,310), style = wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
 		self.panel = wx.Panel(self,-1)
 		
 		self.sourceprint = wx.StaticText(self.panel, -1, "Awaiting Source Directory", (400,65))
@@ -63,7 +63,7 @@ class MyFrame(wx.Frame):
 		self.Bind(wx.EVT_BUTTON, self.SelectNone, self.selectNoneButton)
 		self.selectNoneButton.Enable(False)
 		
-		self.listBox = wx.CheckListBox(self.panel, -1, (15, 15), (220, 181), "", wx.LB_SINGLE)
+		self.listBox = wx.CheckListBox(self.panel, -1, (20, 20), (220, 181), "", wx.LB_SINGLE)
 		self.inlistDisplay = wx.StaticText(self.panel, -1, "",(160,215))
 		self.listBox.Bind(wx.EVT_PAINT, self.on_list_update)
 		
