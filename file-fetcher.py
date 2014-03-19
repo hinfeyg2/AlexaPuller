@@ -16,7 +16,7 @@ import wx.html
 class MyFrame(wx.Frame):
 	
 	def __init__(self, parent, title):
-		wx.Frame.__init__(self,parent, title=title, size=(750,335), style = wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
+		wx.Frame.__init__(self,parent, title=title, size=(750,395), style = wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
 		self.panel = wx.Panel(self,-1)
 		
 		self.sourceprint = wx.StaticText(self.panel, -1, "Awaiting Source Directory", (400,65))
@@ -47,7 +47,7 @@ class MyFrame(wx.Frame):
 		self.rushesDestination = wx.Button(self.panel, -1, 'Destination', (250,160), (130,-1))
 		self.Bind(wx.EVT_BUTTON, self.SetDest, self.rushesDestination)
 		self.rushesDestination.Enable(False)
-		
+	
 		self.DoTheCopyButton = wx.Button(self.panel, -1, 'Pull Files', (250,210),(130,-1))
 		self.Bind(wx.EVT_BUTTON, self.DoCopy, self.DoTheCopyButton)
 		self.DoTheCopyButton.Enable(False)
@@ -57,6 +57,9 @@ class MyFrame(wx.Frame):
 		
 		self.inputquery = wx.TextCtrl(self.panel, -1, pos=(25,280), size=(200,-1))
 		self.inputquery.SetValue('')
+		
+		self.addtoname = wx.TextCtrl(self.panel, -1, pos=(25,310), size=(200,-1))
+		self.addtoname.SetValue('')
 		
 		self.selectAllButton = wx.Button(self.panel, -1, "All", (15,210), (50,-1))
 		self.Bind(wx.EVT_BUTTON, self.SelectAll, self.selectAllButton)
@@ -105,7 +108,7 @@ class MyFrame(wx.Frame):
 		event.Skip()
 		self.filecount = self.listBox.GetCount()
 		self.findchecked = self.listBox.GetChecked()
-		self.filecountdisplay = str(len(self.findchecked)) + "/" + str(self.filecount) + " Found"
+		self.filecountdisplay = str(len(self.findchecked)) + "\\" + str(self.filecount) + " Found"
 		self.inlistDisplay.SetLabel(self.filecountdisplay)
 		self.Refresh()
 
@@ -121,8 +124,8 @@ class MyFrame(wx.Frame):
 			self.DirDest = DestDlg.GetPath()
 			self.destinationprint.SetLabel(str(self.DirDest))
 			for r, d, f in os.walk(self.DirDest):
-				enddir = str(r).split("/")
-				enddir = enddir[-1]
+				enddir = os.path.basename(r)
+
 				for file in f:
 					f_name, f_ext = os.path.splitext(file)
 					
@@ -136,7 +139,12 @@ class MyFrame(wx.Frame):
 								self.listBox.Check(checkedindex, False)
 							
 						elif str(i) == "folder":
+
+							tempstring = frame.addtoname.GetValue()
 							
+							
+
+
 							if enddir in checkedinlist:
 								checkedindex = self.output.index(enddir)
 								
@@ -161,8 +169,8 @@ class MyFrame(wx.Frame):
 			DirFilename = dirDlg.GetPath()
 			
 			for r, d, f in os.walk(DirFilename):
-				enddir = str(r).split("/")
-				enddir = enddir[-1]
+				
+				enddir = os.path.basename(r)
 				
 				for file in f:
 					f_name, f_ext = os.path.splitext(file)
@@ -182,12 +190,14 @@ class MyFrame(wx.Frame):
 								self.listBox.Check(SourceIndexOne, True)
 								
 						elif str(i) == "folder":
-							
+
 							if enddir in self.output:
 								
+
 								SourceIndexOne = self.output.index(enddir)
 								
 								src_abs_path = r
+								
 								self.SourceDictionary[enddir] = [src_abs_path, DirFilename]
 								self.listBox.Check(SourceIndexOne, True)
 								
@@ -267,6 +277,8 @@ class MyFrame(wx.Frame):
 						else:
 							resplit = re.split(cats, matchitem)
 							foundAlexaRoll = resplit[1]
+							tempstring = frame.addtoname.GetValue()
+							foundAlexaRoll = foundAlexaRoll + tempstring
 							foundList.append(foundAlexaRoll)
 						
 
@@ -286,6 +298,8 @@ class MyFrame(wx.Frame):
 			self.rushesSource.Enable(True)
 			self.tworushesSource.Enable(True)
 			frame.fileformats.Enable(False)
+			frame.addtoname.Enable(False)
+			frame.inputquery.Enable(False)
 			
 			r.close()
 		dlg.Destroy()
@@ -369,14 +383,6 @@ class PullFiles(threading.Thread):
 					
 					ret = shutil.copy(src_abs_path, dst_abs_path)
 					
-				"""
-				self.dogs = False
-
-				if ret != 0:
-					pass
-				
-				else:
-				"""
 				self.counter += 1
 				self.toPrint = self.counterText + str(self.counter) + "/" + str(self.listlength)
 				wx.CallAfter(frame.oncopy.SetLabel, self.toPrint)
@@ -440,17 +446,17 @@ class CalSizeTime(threading.Thread):
 				src_abs_path = frame.SourceDictionary[alexa][0]
 				
 				if str(frame.fileformats.GetValue()) == "folder":
-					temppath = src_abs_path + "/"
+					temppath = src_abs_path + "\\"
 				else:
 					temppath = src_abs_path
-				
-				
+
 				statinfo = os.stat(temppath)
 				
 				TotalSize += statinfo.st_size
-			
+				
 		
 		CalString = int(TotalSize) / 1073741824
+		print CalString
 		places = int(CalString * 10**3) / 10**3
 		CalStringWithTxt = str(places) + " Gigs In Total."
 		self.feedback = CalStringWithTxt
