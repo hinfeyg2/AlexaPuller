@@ -245,9 +245,18 @@ class MyFrame(wx.Frame):
 						pass
 					
 					else:
+
+						try:
 						
-						foundAlexaRoll = splitline[1]
-						foundList.append(foundAlexaRoll)
+						
+							foundAlexaRoll = splitline[1]
+							foundList.append(foundAlexaRoll)
+
+						except:
+							pass
+
+						else:
+							pass
 					
 			else:
 			
